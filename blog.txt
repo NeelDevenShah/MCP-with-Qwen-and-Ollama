@@ -1,0 +1,617 @@
+
+Search
+Write
+
+Neel Shah
+Get unlimited access to the best of Medium for less than $1/week.
+Become a member
+
+MCP: The Secret Sauce for Building Scalable AI Systems with OLLAMA and Qwen3
+Neel Shah
+Neel Shah
+13 min read
+·
+Just now
+
+
+
+
+
+
+Introduction
+For AI engineers tasked with building large-scale, enterprise-grade AI systems, integrating models with external tools and data sources is a critical challenge. Custom integrations for each tool create a maintenance nightmare, scaling poorly as systems grow. The Model Context Protocol (MCP), introduced by Anthropic, solves this by providing a standardized, scalable framework for AI-tool interactions, often called the “USB-C of AI integrations”.
+
+This guide is tailored for AI engineers focused on large systems. We’ll dive deep into MCP’s architecture, demonstrate how to build robust MCP servers and clients with multiple tools, and provide a comprehensive integration with OLLAMA’s Qwen3 model for local, privacy-first deployments. Expect detailed code, error handling, performance optimizations, and enterprise use cases — plus a dash of humor to keep it engaging!
+
+Joke Time: Why did the AI engineer love MCP? Because it turned their integration spaghetti into a streamlined masterpiece!
+
+My Journey with MCP: From Confusion to Clarity
+I started learning about MCP a few months ago, diving deep into 30+ resources, documentation, and tutorials. However, I was frustrated to find that none of them provided a complete picture of what MCP really is, its practical use cases, or whether it’s truly the game-changer that could revolutionize AI systems.
+
+The questions that kept me up at night were:
+
+Can MCP replace traditional AI architectures?
+Is AI even possible without MCP in enterprise scenarios?
+What are the real-world use cases beyond the marketing hype?
+How does MCP actually work under the hood?
+Which LLMs support MCP, and how universal is this protocol?
+Are MCP and A2A complementary Protocols?
+After months of research, experimentation, and building actual systems, I’ve compiled this comprehensive guide that answers all these burning questions. This blog contains practical solutions, real code examples, and insights that I wish I had when I started my MCP journey.
+
+Joke Time: Why did the developer spend months learning MCP? Because they wanted to be the person who finally “gets it” when everyone else is still asking “What’s MCP?”
+
+1. What is MCP?
+Model Context Protocol (MCP) is an open standard that enables AI models, particularly large language models (LLMs), to interact with external tools, data sources, and systems in a standardized way. For large-scale AI systems, MCP is a game-changer, reducing integration complexity and enabling dynamic, actionable intelligence.
+
+
+Core Idea: MCP provides a universal interface for AI to connect with databases, APIs, file systems, or custom tools, eliminating bespoke integrations.
+
+Why It’s Needed: LLMs are limited by static training data. MCP enables real-time data access and task execution, critical for enterprise applications.
+
+Scalability: MCP solves the “M×N problem,” reducing M AI apps and N tools from M×N integrations to M+N by standardizing clients and servers.
+
+Can MCP Replace AI? No, MCP doesn’t replace AI — it enhances it. Think of MCP as the nervous system that connects the AI brain to external organs (tools and data sources). Without MCP, AI systems are like brilliant minds trapped in isolation chambers.
+
+Is AI Possible Without MCP? Absolutely, but it’s like building a house with only a hammer. You can do it, but you’ll spend 10x more time and create a fragile, hard-to-maintain system. MCP provides the full toolkit for enterprise AI.
+
+2. MCP Architecture for Large Systems
+MCP’s client-server architecture is designed for modularity and scalability, ideal for enterprise environments.
+
+
+Host: Runs the core AI logic, deciding when to invoke tools based on user queries or system triggers.
+Client: Ensures secure, efficient communication, handling authentication and rate-limiting for enterprise-grade reliability.
+Server: Can be local (e.g., on-premises databases) or remote (e.g., cloud APIs), with fine-grained access control.
+This architecture supports high-throughput, secure integrations, making MCP ideal for large-scale AI deployments.
+
+Joke Time: Why is MCP architecture like a well-organized kitchen? Because the host (chef) knows exactly which client (sous chef) to ask for the right server (ingredient)!
+
+3. LLM Support for MCP: The Real Picture
+Do all open-source LLMs support MCP?
+
+Not all open-source large language models (LLMs) inherently support the Model Context Protocol (MCP). MCP is an open-source protocol developed by Anthropic to standardize how LLM applications integrate with external data sources and tools, enabling seamless context sharing and tool use by AI agents. It follows a client-server architecture where the LLM acts as a host application that connects to MCP clients and MCP servers, exposing specific capabilities or data sources.
+
+Key points about MCP support in open-source LLMs:
+
+MCP is a protocol, not a built-in feature of all LLMs. Support depends on whether the LLM or its hosting application implements an MCP client to communicate with MCP servers.
+Some open-source LLM frameworks or interfaces, like AnythingLLM, explicitly support MCP tools and servers, allowing them to work with MCP-enabled external resources.
+MCP clients and servers are often separate components that can be integrated with various LLMs, including open LLMs like Meta Llama, OpenAI models, or Google Gemini, via adapters or SDKs. This means open-source LLMs can be made MCP-compatible through additional software layers or integration efforts.
+There is an ecosystem of MCP clients and servers growing rapidly, including desktop applications (Claude Desktop), IDEs, and open-source tools such as LibreChat, LMStudio, and others that provide MCP compatibility or MCP client functionality.
+Tools like “mcp-use” provide a unified MCP client library designed to connect any LLM that supports tool calling with MCP servers, facilitating MCP integration even for open-source LLMs that do not natively support MCP.
+In summary, while MCP is an open protocol designed to work broadly with LLMs, not all open-source LLMs come with native MCP support out of the box. Instead, MCP compatibility is typically achieved by integrating MCP clients and servers alongside or on top of the LLM. Frameworks and tools exist to enable this integration, making it possible for many open-source LLMs to support MCP, but it is not universal or automatic across all open-source LLMs.
+
+Which LLMs Support MCP?
+
+Among mostly open-source LLMs and notable models like OpenAI, Qwen, and DeepSeek, here is the current MCP support status:
+
+OpenAI Models
+OpenAI’s GPT-4o series, GPT-4.1 series, and OpenAI’s o-series reasoning models support remote MCP servers natively through their Responses API. This enables these models to connect with external MCP servers and tools for enhanced context and capabilities.
+
+Qwen (by Alibaba)
+Qwen models, specifically Qwen3, support MCP integration via the Qwen-Agent framework. This allows Qwen-powered AI agents to connect with MCP servers such as Bright Data MCP server for real-time data retrieval and automation. The integration is straightforward and supported by official examples.
+
+DeepSeek
+DeepSeek provides an MCP server implementation called “mcp-server-deepseek” that acts as a bridge between LLM applications and DeepSeek’s reasoning capabilities. This MCP server exposes DeepSeek-R1’s reasoning content to any MCP-compatible client, enhancing models without native reasoning.
+
+Open-Source LLM Frameworks
+
+AnythingLLM explicitly supports all MCP tools and servers, allowing seamless integration with MCP-enabled external resources and AI agents.
+LangChain and LlamaIndex provide MCP server implementations or adapters that enable open-source LLMs to connect with MCP servers for dynamic context retrieval and tool integration.
+Many open-source MCP servers exist (e.g., Notion, Supabase, Pinecone, Slack, Salesforce MCP servers) which can be integrated with open-source LLM frameworks that support MCP clients.
+Joke Time: Why did the LLM go to MCP therapy? Because it had commitment issues with external tools!
+
+4. Building Robust MCP Servers and Clients
+
+Let’s build a production-ready MCP server and client, optimized for enterprise use. We’ll include multiple tools, error handling, and logging for reliability.
+
+4.1 Building an MCP Server with Multiple Tools
+
+We’ll use the MCP library to create a server with tools for text generation, code execution, web scraping, and financial analysis, all powered by OLLAMA’s Qwen3 model.
+
+Prerequisites
+
+Install OLLAMA:
+
+curl -fsSL https://ollama.com/install.sh | sh
+ollama serve
+ollama pull qwen3:8b-q4_K_
+Install Dependencies:
+
+pip install mcp[cli] requests python-dotenv langchain-ollama fastmcp
+git clone https://github.com/pietrozullo/mcp-use.git
+cd mcp-use
+pip install -e .
+MCP Server Code
+
+from mcp.server.fastmcp import FastMCP
+import subprocess
+import requests
+import logging
+from typing import Dict, Any, Optional
+from datetime import datetime, timedelta
+
+mcp = FastMCP(
+    name="Qwen3 Enterprise MCP",
+    description="Robust MCP server for enterprise AI with Qwen3",
+    dependencies=["requests"]
+)
+
+@mcp.tool()
+def execute_python_code(code: str) -> str:
+    """Execute Python code and return the output."""
+    try:
+        result = subprocess.run(
+            ["python", "-c", code],
+            capture_output=True,
+            text=True,
+            timeout=15
+        )
+        output = result.stdout or result.stderr
+        return output
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+@mcp.tool()
+def fetch_web_content(url: str, max_length: int = 5000) -> str:
+    """Fetch content from a given URL."""
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        content = response.text[:max_length]
+        return content
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+@mcp.prompt()
+def analyze_web_content(url: str) -> str:
+    """Analyze web content using Qwen3."""
+    return f"""You are an expert analyst. Use the fetch_web_content tool to retrieve content from {url}, then use the generate_text tool to summarize the content in 100 words or less. Provide key insights and conclusions."""
+
+if __name__ == "__main__":
+    mcp.run()
+How to Run?
+1. Save as `qwen3_mcp_server.py`.
+2. Ensure OLLAMA is running (`ollama serve`).
+3. Run with `python qwen3_mcp_server.py`.
+4. Access at `http://localhost:8000/mcp`.
+
+4.2 Building an MCP Client with mcp-use
+
+The client uses the MCP-use framework to interact with the MCP server, leveraging Qwen3 for enterprise-grade tasks.
+
+Client Code
+
+import asyncio
+import os
+from dotenv import load_dotenv
+from langchain_ollama import ChatOllama
+from mcp_use import MCPAgent, MCPClient
+
+async def main():
+    # Load environment variables
+    load_dotenv()
+
+    # Create configuration dictionary
+    config = {
+  "mcpServers": {
+    "custom_server": {
+      "command": "python",
+      "args": ["server2.py"],  # Relative path if running from same directory
+      "cwd": "/home/neelshah",  # Set working directory
+      "env": {}
+    }
+  }
+}
+
+    # Create MCPClient from configuration dictionary
+    client = MCPClient.from_dict(config)
+
+    # Create LLM
+    llm = ChatOllama(model="qwen3:4b", temperature=0.7)
+
+    # Create agent with the client
+    agent = MCPAgent(llm=llm, client=client, max_steps=30)
+
+    # Run the query
+    result = await agent.run(
+        "Get me details from the kimaxpolytron.com",
+    )
+    print(f"\nResult: {result}")
+
+if __name__ == "__main__":
+    asyncio.run(main())
+What’s Happening?:
+
+Configures Qwen3 via OLLAMA’s API.
+Connects to the MCP server, enabling access to all tools and prompts.
+Processes two queries: summarizing a webpage and analyzing stock data.
+How to Run:
+1. Save as `qwen3_mcp_client.py`.
+2. Ensure the MCP server is running.
+3. Run with `python qwen3_mcp_client.py`.
+
+
+Joke Time: Why did the MCP client break up with the server? Because it was tired of all the timeout issues!
+
+5. Enterprise Use Cases
+MCP shines in large-scale AI systems:
+
+
+These use cases highlight MCP’s role in scalable, secure AI deployments.
+
+6. Deep Dive: Qwen3 + OLLAMA + MCP Integration
+Why This Stack?
+
+Qwen3: Alibaba’s open-source LLM, optimized for tool-use and enterprise tasks.
+OLLAMA: Enables local LLM deployment, ensuring privacy and low latency.
+MCP: Standardizes tool integration, critical for large systems with multiple data sources.
+Technical Details
+
+Performance: The 4-bit quantized Qwen3 8B model uses ~16GB VRAM, suitable for enterprise GPUs. It balances speed and accuracy for tool-use tasks.
+Security: Local deployment via OLLAMA ensures data stays on-premises. MCP’s structured interface limits tool access to predefined actions.
+Scalability: The HTTP-based MCP server supports distributed systems, with clients accessing tools across networks.
+Extensibility: Add new tools (e.g., database queries, machine learning pipelines) by defining `@mcp.tool()` functions.
+
+Challenges and Solutions
+
+Resource Usage: Qwen3’s memory demands can strain hardware. Use quantized models and optimize GPU usage.
+Tool Latency: Web scraping or code execution may be slow. Set timeouts and use async processing.
+Error Recovery: Robust error handling and retries ensure system reliability.
+Joke Time: Why did Qwen3 and MCP team up? To build an AI empire that never needs cloud support!
+
+7. MCP Communication Format: The JSON-RPC 2.0 Magic
+One of the most crucial technical aspects that I struggled to understand during my MCP learning journey was: What is the specific format that shares information related to MCP tools with LLMs? The answer is elegant in its simplicity yet powerful in implementation.
+
+The Protocol: JSON-RPC 2.0
+
+The Model Context Protocol (MCP) uses JSON-RPC 2.0 as its communication format to share information about tools between LLM hosts, clients, and servers. This standardized approach ensures structured, secure, and auditable exchanges where:
+
+MCP Hosts (LLM applications) initiate connections
+MCP Clients (inside hosts) maintain connections with MCP Servers
+MCP Servers expose executable tools/functions that the LLM can invoke
+Real-World JSON Examples
+
+Here are actual examples of how MCP tools communicate:
+
+Example 1: Listing Available Tools
+
+Request from LLM Host to MCP Server:
+{
+   "jsonrpc": "2.0",
+   "id": 1,
+   "method": "tools/list",
+   "params": {}
+}
+Response from MCP Server:
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "tools": [
+      {
+        "name": "get_weather",
+        "description": "Retrieves current weather data for a specified location",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "location": {
+              "type": "string",
+              "description": "City name or coordinates"
+            },
+            "units": {
+              "type": "string",
+              "enum": ["celsius", "fahrenheit"],
+              "default": "celsius"
+            }
+          },
+          "required": ["location"]
+        }
+      },
+      {
+        "name": "execute_python",
+        "description": "Execute Python code and return the output",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Python code to execute"
+            },
+            "timeout": {
+              "type": "number",
+              "default": 30,
+              "description": "Execution timeout in seconds"
+            }
+          },
+          "required": ["code"]
+        }
+      }
+    ]
+  }
+}
+Example 2: Tool Invocation
+
+Tool Call Request:
+
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/call",
+  "params": {
+    "name": "get_weather",
+    "arguments": {
+      "location": "San Francisco",
+      "units": "celsius"
+    }
+  }
+}
+Tool Execution Response:
+
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Current weather in San Francisco: 18°C, partly cloudy, humidity 65%, wind 12 km/h NW"
+      }
+    ],
+    "isError": false
+  }
+}
+Why JSON-RPC 2.0?
+
+The choice of JSON-RPC 2.0 is brilliant for several reasons:
+
+1. Standardization: Well-established protocol with extensive tooling
+2. Language Agnostic: Works across all programming languages
+3. Bidirectional: Supports both request-response and notification patterns
+4. Structured: Clear separation of method, parameters, and results
+5. Error Handling: Built-in error reporting mechanisms
+6. Auditable: All interactions are logged and traceable
+
+Joke Time: Why does MCP use JSON-RPC 2.0? Because it wanted to speak a language that both humans and AI could understand — structured enough for machines, readable enough for debugging at 3 AM!
+
+8. Answering the Big Questions
+Based on my months of research and hands-on experience, here are the answers to the burning questions about MCP:
+
+Q. Can MCP Change AI?
+Absolutely. MCP is to AI what APIs were to web development. It standardizes how AI systems interact with the world, making them more powerful, flexible, and maintainable. Without MCP, we’re stuck with proprietary, fragmented solutions.
+
+Q. Can MCP Replace AI?
+No, and it doesn’t need to. MCP is the infrastructure layer that makes AI more useful. It’s like asking if roads can replace cars — they serve different purposes but work together perfectly.
+
+Q. Is AI Possible Without MCP?
+Yes, but it’s painful. You’ll end up building custom integrations for every tool, creating a maintenance nightmare. MCP eliminates this by providing a standard protocol that scales.
+
+Q. What Are the Real Use Cases of MCP?
+
+Enterprise Analytics: Real-time data processing and insights
+Automated Operations: Connecting AI to business systems
+Research Platforms: Integrating multiple data sources and tools
+Privacy-First AI: Local deployment with external tool access
+Q. Are MCP and A2A complementary Protocols?
+
+MCP and A2A aren’t competitors — they’re teammates. In practice:
+
+1. An orchestrator agent might use A2A to coordinate a team of specialized agents
+2. Each specialized agent then uses MCP internally to access its specific tools
+3. Results are shared back through the A2A network
+
+Think of it like a construction team:
+
+A2A is the foreman coordinating different trades
+MCP is each tradesperson’s specialized toolkit
+Together, they build something more complex than either could alone
+Key Differences At a Glance
+
+
+Joke Time: Why did the AI developer finally understand MCP? Because they realized it’s not about replacing AI — it’s about making AI friends with everything else!
+
+9. Revolutionizing Enterprise AI
+MCP transforms enterprise AI by:
+
+Standardization: Eliminates custom integrations, reducing development time.
+Real-Time Insights: Enables live data access for accurate analytics.
+- Actionable Systems: Supports tasks like automation and decision-making.
+Community Ecosystem: Open standard fosters reusable tools.
+Understanding MCP vs A2A: Complementary Protocols for AI Systems
+
+The MCP (Model Context Protocol) and A2A (Agent-to-Agent Protocol) are distinct but complementary protocols designed for AI agent ecosystems, serving different purposes and functionalities.
+
+Conclusion
+For AI engineers building large-scale systems, MCP is a cornerstone technology. It simplifies integrations, enhances scalability, and enables privacy-first deployments with tools like OLLAMA and Qwen3. This guide provided a production-ready MCP server and client, complete with multiple tools, error handling, and enterprise optimizations.
+
+After months of diving deep into MCP, I can confidently say it’s not just another protocol — it’s the missing piece that makes AI systems truly enterprise-ready. The combination of Qwen3’s intelligence, OLLAMA’s local deployment capabilities, and MCP’s standardized integration framework creates a powerful, scalable, and secure AI stack.
+
+By mastering MCP, you can build AI systems that are modular, secure, and ready for the future. The questions that kept me up at night have been answered, and I hope this guide helps you avoid the confusion I experienced and jump straight to building amazing AI systems.
+
+Final Joke: Why did the AI engineer master MCP? Because they wanted to plug their AI into everything — and finally, they could!
+
+Mcp Client
+Mcp Server
+Agentic System
+Qwen 3
+AI
+
+
+
+
+Neel Shah
+Written by Neel Shah
+10 followers
+·
+68 following
+AI Engineer & Oracle Certified Professional. Expert in ML, DL, and Azure. Specialize in CV, NLP, and RL. Passionate about impactful tech solutions in AI/ML.
+
+Edit profile
+No responses yet
+
+Neel Shah
+Neel Shah
+he/him
+﻿
+
+Cancel
+Respond
+More from Neel Shah
+🤖 What is A2A (Agent-to-Agent), and Why Should You Care?
+Neel Shah
+Neel Shah
+
+🤖 What is A2A (Agent-to-Agent), and Why Should You Care?
+As AI agents continue to evolve — whether in LangChain, CrewAI, AutoGen, or Google’s ADK — we’re seeing a new problem: they don’t play…
+3d ago
+
+
+Hunting Figures in the Wild: AI vs. Technical PDFs
+Neel Shah
+Neel Shah
+
+Hunting Figures in the Wild: AI vs. Technical PDFs
+Ever tried to extract figures from a technical PDF and ended up with a broken jigsaw puzzle of cropped images, misaligned coordinates, and…
+Apr 29
+
+
+Why Git LFS Is Not Good Practice for AI Model Weights and Why You Should Use DVC Instead (Demo with…
+Neel Shah
+Neel Shah
+
+Why Git LFS Is Not Good Practice for AI Model Weights and Why You Should Use DVC Instead (Demo with…
+When it comes to managing AI projects, storing large model weights in version-controlled repositories often poses challenges. While Git LFS…
+Dec 6, 2024
+
+
+A Summer of Innovation: AI Internship at Aviato Consulting
+Neel Shah
+Neel Shah
+
+A Summer of Innovation: AI Internship at Aviato Consulting
+Picture this: A sweltering summer day in Ahmedabad, India. I’m sitting at my desk, fan whirring overhead, about to embark on an eight-week…
+Jul 6, 2024
+5
+
+
+See all from Neel Shah
+Recommended from Medium
+I Stopped Building Frontends. Now I Use MCP Servers to Let AI Run My Apps
+JavaScript in Plain English
+In
+
+JavaScript in Plain English
+
+by
+
+GeekSociety
+
+I Stopped Building Frontends. Now I Use MCP Servers to Let AI Run My Apps
+It’s 2025, and the way we build applications has fundamentally changed.
+
+6d ago
+3.1K
+119
+
+
+These 40 Open-source Tools Will Replace Half Your Tech Stack (And Some Tools are Free)
+Let’s Code Future
+In
+
+Let’s Code Future
+
+by
+
+TheMindShift
+
+These 40 Open-source Tools Will Replace Half Your Tech Stack (And Some Tools are Free)
+I curated 40 powerful, production-ready open-source tools that every serious developer should have in their toolbox.
+
+6d ago
+1.4K
+24
+
+
+Building a Multi-Agent AI System with LangGraph and LangSmith
+Level Up Coding
+In
+
+Level Up Coding
+
+by
+
+Fareed Khan
+
+Building a Multi-Agent AI System with LangGraph and LangSmith
+A step-by-step guide to creating smarter AI with sub-agents
+
+6d ago
+833
+12
+
+
+MCP -The Golden Key for AI Automation
+Towards AI
+In
+
+Towards AI
+
+by
+
+Alex Punnen
+
+MCP -The Golden Key for AI Automation
+What is MCP? How do LLMs call via MCP? How does the MCP Authorisation work? and other aspects
+
+May 31
+643
+9
+
+
+How to Build AI Agents with Local LLMs and MCP Architectures
+Sujithra Kathiravan
+Sujithra Kathiravan
+
+How to Build AI Agents with Local LLMs and MCP Architectures
+Building AI Agents has become more accessible with the integration of Local LLMs and MCP Architectures. This combination enables developers…
+6d ago
+23
+3
+
+
+A futuristic AI brain or neural network core, glowing with electric blue and purple hues, connected via luminous circuits to multiple modular units, each representing different AI model types (like vision, text, audio, and robotics), all set against a sleek, high-tech interface background — a tech-forward, cybernetic aesthetic.
+Mr. Plan ₿ Publication
+In
+
+Mr. Plan ₿ Publication
+
+by
+
+Pasindu Rangana
+
+Not Everything Is an LLM: 8 AI Model Types You Need to Know in 2025
+Beyond ChatGPT, A beginner’s guide to today’s essential AI models.
+
+5d ago
+1.1K
+14
+
+
+See more recommendations
+Help
+
+Status
+
+About
+
+Careers
+
+Press
+
+Blog
+
+Privacy
+
+Rules
+
+Terms
+
+Text to speech

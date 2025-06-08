@@ -61,7 +61,7 @@ This project includes:
 1. Clone this repository:
 
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/NeelDevenShah/MCP-with-Qwen-and-Ollama
    cd MCP-Experiment
    ```
 
